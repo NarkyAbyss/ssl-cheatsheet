@@ -1,0 +1,63 @@
+## List of common openssl commands for certificate management
+## AUTHOR: Michael Brew
+## Published under BEERWARE License
+## Last revision 04/20/2017
+##############################################################
+
+#GEN KEYPAIR AND SIGN
+##Single self-sign command
+openssl req -x509 -newkey rsa:4096 -nodes -keyout private.key -out signed.crt -days 365 -subj "/C=US/ST=CA/O=Bloombase/CN=<NAME>"
+
+
+##Generate a key (optionally: -aes256 <password>)
+openssl genrsa -out private.key 2048
+
+##Generate a Certificate Request
+openssl req -new -key private.key -out req.csr -subj "/C=US/ST=CA/O=Bloombase/CN=<NAME>"
+
+##Self-Sign Certificate with private key
+openssl x509 -req -days 365 -in req.csr -signkey private.key -out signed.crt
+
+##(skip)Sign Certificate with CA cert
+openssl ca -cert ca.crt -keyfile ca.key -in req.csr -out signed.crt
+#or
+openssl x509 -req -days 500 -sha256 -in req.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out signed.crt
+
+
+##Combine into PKCS#12 File (to add CA use: -certfile <ca_cert>)
+openssl pkcs12 -export -in signed.crt -inkey private.key -out test.p12
+
+##Convert PKCS#12 to PEM (remove pass)
+openssl pkcs12 -in test.p12 -out test.pem
+#or
+openssl pkcs12 -in path.p12 -out newfile.crt.pem -clcerts -nokeys
+openssl pkcs12 -in path.p12 -out newfile.key.pem -nocerts -nodes
+openssl pkcs12 -in path.p12 -out newfile.ca.crt.pem -cacerts -nokeys
+
+
+#OTHER COMMANDS
+
+##Convert cert format
+openssl asn1parse -inform DER -in cert.crt
+openssl x509 -inform DER -in cert.crt
+
+##Extracting the public key from an RSA keypair (simple keypair)
+openssl rsa -pubout -in private.key -outform PEM -out public.pem
+
+##Generate Diffie Hellman parameters
+openssl dhparam -out dh2048.pem 2048
+
+
+#EXTRACT INFO
+
+##modulus, exponents, primes, etc
+openssl rsa -text -in private_key.pem
+openssl req -text -in req.pem
+openssl x509 -text -in cert.pem
+
+
+
+#PEM: synonym for base64
+#DER: a flavor of ASN.1 encoding
+#ASN.1: the binary encoding scheme used
+#PKCS#1: The formal specification that dictates representing a public key as structure that consists of modulus followed by an exponent
